@@ -1,0 +1,56 @@
+schema: spec-driven
+
+# Contexto de proyecto para OpenSpec.
+# Resume solo restricciones que deben guiar los artefactos y el trabajo de los agentes.
+# La fuente de verdad funcional completa está en docs/00-producto.md.
+context: |
+  Proyecto: plataforma web para un colegio de educación básica en Chile.
+  Fuente de verdad funcional: docs/00-producto.md. Léela antes de proponer o implementar cambios.
+  Alcance: un solo colegio, aproximadamente 300 estudiantes, baja concurrencia. No es multi-tenant.
+  Stack: monolito TypeScript con Fastify + Prisma + PostgreSQL; frontend React + Vite; un solo paquete; Zod; Vitest + Playwright.
+  Autenticación: OTP por WhatsApp o correo, sesión con token persistido y cookie httpOnly. La capa de seguridad completa está diseñada pero fuera del alcance de esta tarea; no la implementes salvo que el change lo pida explícitamente.
+  Despliegue: VPS con Docker Compose y Caddy. No Kubernetes, microservicios ni serverless.
+  Idioma: documentación, UI y mensajes en español de Chile, UTF-8, con tildes. Identificadores de código, tablas y endpoints en inglés.
+  Reglas clave: un apoderado solo opera sobre sus estudiantes; un evento aplica por cursos con excepciones individuales; una autorización vigente por estudiante/evento antes de la fecha límite, y las anuladas permiten una nueva firma; el retiro externo es multi-día, con documento del apoderado y de cada externo, y solo es válido con aprobación del administrador; el calendario de retiros no permite bloqueo manual de fechas; los documentos de identidad se eliminan a los 12 meses.
+  Flujo de trabajo: al iniciar y al finalizar cada spec/change, ejecutar tests, typecheck y build. Al modificar lógica, verificar las reglas de negocio y las decisiones de docs/00-producto.md; si una decisión cambia, actualizar la documentación antes del código.
+  Diseño: respetar SOLID y separar rutas, servicios y repositorios. Nada de lógica de negocio en rutas o componentes.
+  Seguridad: no registrar datos personales en logs, no exponer documentos, no commitear secretos y validar permisos en el servidor.
+
+rules:
+  proposal:
+    - Escribir en español de Chile, con tildes y UTF-8.
+    - Declarar explícitamente el alcance y lo que queda fuera.
+    - No proponer multi-colegio, OCR, firma avanzada, notificaciones masivas ni bloqueo de fechas.
+    - Indicar qué reglas de negocio de docs/00-producto.md se ven afectadas.
+    - Mantener el cambio acotado a una capacidad verificable.
+  specs:
+    - Usar escenarios verificables con Given/When/Then.
+    - Cubrir permisos de apoderado y administrador, estados y casos límite.
+    - Incluir criterios de aceptación para autorizaciones y retiros.
+    - Mantener coherencia con docs/00-producto.md; si hay conflicto, detenerse y actualizar la fuente de verdad.
+    - Escribir en español de Chile, con tildes y UTF-8.
+  design:
+    - Justificar decisiones técnicas y alternativas descartadas.
+    - Respetar SOLID y la separación rutas/servicios/repositorios.
+    - Indicar impacto en modelo de datos, migraciones y tests.
+    - No introducir dependencias o servicios de infraestructura sin justificación.
+    - No implementar la capa de seguridad completa salvo que el change lo pida explícitamente.
+  tasks:
+    - "Incluir una tarea inicial de línea base: ejecutar tests, typecheck y build."
+    - "Incluir una tarea final de verificación: tests, typecheck, build y revisión de reglas/decisiones."
+    - Dividir el trabajo en tareas pequeñas, ordenadas y verificables.
+    - Cada tarea debe indicar qué test o validación la comprueba.
+
+operations:
+  apply:
+    guidance:
+      - Antes de implementar, leer docs/00-producto.md y los artefactos del change.
+      - Ejecutar tests, typecheck y build al inicio y al cierre.
+      - No cerrar si hay tests rojos o reglas de negocio sin cubrir.
+      - Actualizar docs/00-producto.md si cambia una decisión de producto.
+      - Mantener el texto visible en español de Chile, con tildes.
+  archive:
+    guidance:
+      - Verificar que specs y documentación quedaron sincronizadas.
+      - Resumir qué reglas o decisiones cambiaron.
+      - Confirmar que no se introdujeron capacidades fuera de alcance.
