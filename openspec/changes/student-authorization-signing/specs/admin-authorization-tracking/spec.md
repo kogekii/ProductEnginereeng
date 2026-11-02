@@ -208,3 +208,21 @@ El menú y el detalle SHALL mostrar solo los datos necesarios de estudiantes y a
 - **WHEN** el sistema registra la consulta en los logs
 - **THEN** no incluye nombres, documentos ni datos de contacto
 - **AND** registra solo identificadores internos y el resultado de la operación
+
+### Requirement: Cierre de sesión del administrador
+
+El dashboard del administrador SHALL mostrar una acción **Cerrar sesión** en sus vistas y SHALL revocar la sesión actual, limpiar la cookie de sesión y redirigir a `/login` al usarla. Una sesión cerrada SHALL dejar de autorizar el acceso a las vistas y APIs administrativas.
+
+#### Scenario: Administrador cierra sesión desde el dashboard
+
+- **GIVEN** un administrador autenticado en el dashboard
+- **WHEN** selecciona **Cerrar sesión**
+- **THEN** el cliente solicita el cierre de la sesión al servidor
+- **AND** elimina la sesión activa y su cookie
+- **AND** redirige a `/login`
+
+#### Scenario: Sesión cerrada no vuelve a acceder al dashboard
+
+- **GIVEN** un administrador que ya cerró sesión
+- **WHEN** intenta volver al dashboard o consultar una API administrativa
+- **THEN** el cliente lo redirige al login y el servidor rechaza la sesión

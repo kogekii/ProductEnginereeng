@@ -22,6 +22,7 @@ El sistema aún no permite que un apoderado autorice a sus estudiantes para un e
 - Una autorización anulada deja de ser vigente: el estudiante vuelve a contar como pendiente y el apoderado puede firmar una nueva, conservando la anulada en la auditoría.
 - El administrador accede a un menú **Eventos** con los eventos publicados y cerrados del mes actual y del mes siguiente que aún no han ocurrido, filtrables por curso. Cada evento muestra cuántas autorizaciones faltan.
 - Al entrar a un evento, el administrador ve el listado de estudiantes que aún no autorizan, con su curso y sus apoderados.
+- El dashboard del administrador ofrece **Cerrar sesión**. Al usarlo, revoca la sesión actual, limpia la cookie de sesión y devuelve al usuario a `/login`.
 
 **BREAKING**: ninguno. No existe una funcionalidad previa de autorizaciones que reemplazar; este change la introduce.
 
@@ -45,6 +46,6 @@ Ninguna. El repositorio aún no tiene specs principales.
 - **Base de demostración**: este change incluye el scaffold mínimo, el login simulado por teléfono o correo, el seed de datos falsos y un proveedor de documento simulado. El OTP, la captura real y el cifrado de documentos se abordan en changes posteriores.
 - **Modelo de datos**: `Authorization` mantiene una sola autorización vigente por estudiante y evento. Se requiere una relación que agrupe las autorizaciones creadas en un mismo envío y un documento de identidad compartido por ese envío. El detalle se define en `design.md`.
 - **API**: endpoints para listar eventos con estudiantes aplicables y su estado, y para confirmar un envío con varios pares.
-- **Interfaz**: pantalla de eventos, selección por evento, selección masiva, resumen, captura del documento y resultado del envío; menú y detalle de eventos en el dashboard.
+- **Interfaz**: pantalla de eventos, selección por evento, selección masiva, resumen, captura del documento y resultado del envío; menú y detalle de eventos en el dashboard, con cierre de sesión accesible para el administrador.
 - **Tests**: unitarios de aplicabilidad, exclusión de ya autorizadas, resumen, resultado parcial y contador del administrador; E2E de los flujos 1, 1.2, 2 y 3.
 - **Fuera de alcance**: retiros externos, OCR, firma avanzada, notificaciones o recordatorios, la acción administrativa de anular autorizaciones, creación o edición de eventos, importación CSV, el OTP real, la captura real y el cifrado de documentos, y la capa de seguridad completa. El flujo sí considera el efecto de una autorización ya anulada.
