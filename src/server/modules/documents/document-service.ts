@@ -1,0 +1,41 @@
+import { PrismaClient } from '@prisma/client';
+import type { DocumentStorage, StoredDocument } from './document-storage.js';
+
+export class DocumentService {
+  constructor(private readonly database: PrismaClient, private readonly storage: DocumentStorage, private readonly retentionDays: number) {}
+
+  async upload(ownerId: string, buffer: Buffer, mimeType: string): Promise<{ id: string }> {
+    if (!this.matchesMime(buffer, mimeType)) throw new Error('El contenido del archivo no coincide con su tipo.');
+    const stored: StoredDocument = await this.storage.store(buffer, mimeType);
+    try {
+      const document = await this.database.document.create({ data: {
+        ownerId, type: 'GUARDIAN_IDENTITY', ...stored,
+        deleteAfter: new Date(Date.now() + this.retentionDays * 86_400_000),
+      }, select: { id: true } });
+      return document;
+    } catch (error) {
+      await this.storage.delete(stored.privatePath);
+      throw error;
+    }
+  }
+
+  async read(documentId: string, user: { id: string; isAdmin: boolean }) {
+    const document = await this.database.document.findFirst({
+      where: {
+        id: documentId,
+        deletedAt: null,
+        ...(user.isAdmin ? {} : { OR: [{ ownerId: user.id }, { submissions: { some: { guardianId: user.id } } }] }),
+      },
+      select: { privatePath: true, mimeType: true },
+    });
+    if (!document) return null;
+    return { buffer: await this.storage.read(document.privatePath), mimeType: document.mimeType };
+  }
+
+  private matchesMime(buffer: Buffer, mimeType: string) {
+    if (mimeType === 'image/jpeg') return buffer.length > 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+    if (mimeType === 'image/png') return buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    if (mimeType === 'application/pdf') return buffer.subarray(0, 5).toString('ascii') === '%PDF-';
+    return false;
+  }
+}

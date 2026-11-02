@@ -87,14 +87,14 @@ Se agregan los siguientes modelos a `prisma/schema.prisma`, con tablas y columna
 | `Event` | `id`, `type`, `title`, `description`, `location`, `startsAt`, `endsAt`, `authorizationText`, `deadlineAt`, `status`, `createdById` | `status` en `DRAFT`, `PUBLISHED`, `CLOSED`, `CANCELLED` |
 | `EventCourse` | `id`, `eventId`, `courseId` | Único por evento y curso |
 | `EventStudentException` | `id`, `eventId`, `studentId`, `mode` | Único por evento y estudiante; `mode` en `INCLUDE`, `EXCLUDE` |
-| `Document` | `id`, `type`, `privatePath`, `mimeType`, `sizeBytes`, `sha256`, `isEncrypted`, `isSimulated`, `deleteAfter`, `deletedAt?`, `createdAt` | Sin URL pública |
+| `Document` | `id`, `ownerId?`, `type`, `privatePath`, `mimeType`, `sizeBytes`, `sha256`, `isEncrypted`, `isSimulated`, `deleteAfter`, `deletedAt?`, `createdAt` | Sin URL pública; `ownerId` habilita acceso privado incluso antes de asociarlo a un envío |
 | `AuthorizationSubmission` | `id`, `guardianId`, `documentId?`, `idempotencyKey`, `ip`, `userAgent`, `sessionId`, `status`, `resultSnapshot?`, `createdAt` | Único por apoderado y clave de idempotencia |
 | `Authorization` | `id`, `eventId`, `studentId`, `guardianId`, `submissionId`, `documentId`, `status`, `signedAt`, `ip`, `userAgent`, `sessionId`, `authorizationTextSnapshot`, `authorizationTextHash`, `summarySnapshot`, `annulledAt?`, `annulledById?`, `annulmentReason?` | Ver índice parcial |
 | `AuditLog` | `id`, `actorId?`, `action`, `entity`, `entityId`, `metadata`, `ip`, `userAgent`, `createdAt` | Sin datos personales en `metadata` |
 
 Decisiones del modelo:
 
-- **`AuthorizationSubmission` agrupa el envío** y guarda el documento, la sesión, la IP, el user agent y la clave de idempotencia. Cada `Authorization` referencia el envío y además conserva `documentId` para que su evidencia sea autocontenida. Es una referencia duplicada intencional: si mañana cambia el envío, la autorización no pierde su respaldo.
+- **`AuthorizationSubmission` agrupa el envío** y guarda el documento, la sesión, la IP, el user agent y la clave de idempotencia. `Document.ownerId` protege la carga previa antes de que exista un envío; el documento se puede asociar a un solo envío. Cada `Authorization` referencia el envío y además conserva `documentId` para que su evidencia sea autocontenida. Es una referencia duplicada intencional: si mañana cambia el envío, la autorización no pierde su respaldo.
 - **Índice único parcial** sobre `authorization (event_id, student_id) WHERE status = 'SIGNED'`. Prisma no expresa índices parciales en el schema, así que se crea con SQL dentro de la migración inicial. Las filas `ANNULLED` quedan fuera del índice y se conservan.
 - **`summarySnapshot`** es JSON con el par, el título y las fechas del evento, el propósito, la fecha límite y el total de pares del envío. Se guarda por autorización porque el resumen mostrado es parte de la evidencia.
 - **`resultSnapshot`** guarda el resultado del envío para que un reintento con la misma clave devuelva exactamente lo mismo sin volver a procesar.
@@ -248,6 +248,7 @@ Rutas del cliente:
 - En modo demo no existe pantalla de captura. El resumen muestra el aviso **Documento simulado en modo demostración** y el botón **Confirmar autorización** envía el lote directamente.
 - El resultado parcial lista los pares creados y los fallidos con su motivo, y ofrece **Volver a los eventos**. Los pares ya autorizados se muestran como **Ya autorizada** y los eventos completos como **Estudiantes Autorizados**.
 - El menú del administrador usa TanStack Query con invalidación al cambiar filtros. El detalle muestra el estado del evento y no ofrece acciones de firma.
+- Las vistas `/admin/eventos` y `/admin/eventos/:id` mantienen **Cerrar sesión** en la cabecera. La acción usa `POST /api/auth/logout`, revoca la sesión en el servidor, limpia la cookie y la caché de consultas del cliente, y redirige a `/login`.
 - Todo el texto visible está en español de Chile, con tildes y UTF-8.
 
 Alternativas descartadas:
