@@ -1,3 +1,5 @@
+# Construcción ARM64: docker buildx build --platform linux/arm64 --load -t school-authorizations-app:arm64 .
+# FROM hereda la plataforma objetivo; las dependencias y Prisma se generan para ella.
 FROM node:24-bookworm-slim AS base
 
 RUN apt-get update \
@@ -41,4 +43,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["node", "dist/server/server.js"]
+CMD ["node", "dist/server/server/server.js"]
