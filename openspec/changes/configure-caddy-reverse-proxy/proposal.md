@@ -6,7 +6,8 @@ La aplicación necesita un punto de entrada HTTPS en el VPS que reciba las solic
 
 ## What Changes
 
-- Agregar Caddy al despliegue Docker Compose con los puertos HTTP/HTTPS necesarios y almacenamiento persistente para sus datos y configuración.
+- Consolidar PostgreSQL, la aplicación y Caddy en un único `docker-compose.yml`; PostgreSQL se inicia por defecto y la aplicación/Caddy se habilitan con el perfil `production`.
+- Configurar Caddy con los puertos HTTP/HTTPS necesarios y almacenamiento persistente para sus datos y configuración.
 - Agregar un `Caddyfile` que aplique HTTPS y haga reverse proxy al servicio de aplicación por la red Docker.
 - Documentar la configuración del dominio, variables requeridas y pasos de operación del despliegue.
 - No exigir un dominio de pago; el despliegue usará un nombre DNS que resuelva al VPS, por ejemplo un subdominio DuckDNS cuando el usuario lo configure.
@@ -23,6 +24,6 @@ Ninguna.
 
 ## Impact
 
-- `docker-compose.yml` y nuevo archivo `Caddyfile` o configuración equivalente montada por Compose.
+- `docker-compose.yml` y `Caddyfile`; se elimina el overlay `docker-compose.production.yml`.
 - Documentación de despliegue del VPS y configuración del dominio.
 - No se esperan cambios en API, modelo de datos, dependencias de aplicación ni reglas de negocio. No se implementará DNS dinámico ni integración específica con DuckDNS.

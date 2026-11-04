@@ -15,7 +15,7 @@ Aplicación web mobile-first para autorizaciones de eventos y gestión administr
 
 ## Despliegue de producción en VPS
 
-El despliegue público usa `docker-compose.yml` junto con `docker-compose.production.yml`. El primero mantiene PostgreSQL y su puerto de desarrollo ligado solo a `127.0.0.1`; el segundo añade la aplicación y Caddy. El puerto 3000 de la aplicación y PostgreSQL no se publican en la interfaz pública.
+El despliegue usa un solo `docker-compose.yml`. PostgreSQL se inicia por defecto; la aplicación y Caddy están en el perfil `production`. PostgreSQL queda ligado solo a `127.0.0.1` para el desarrollo local y la aplicación no publica su puerto 3000. En el VPS solo se exponen HTTP/HTTPS mediante Caddy.
 
 ### Requisitos
 
@@ -41,8 +41,8 @@ Codifica los caracteres reservados de la contraseña como URL percent-encoding d
 Desde el directorio del repositorio en el VPS:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.production.yml config
-docker compose -f docker-compose.yml up -d postgres
+docker compose config --quiet
+docker compose up -d postgres
 ```
 
 Antes de iniciar la aplicación, aplica las migraciones desde el repositorio en el VPS con Corepack/pnpm y un `DATABASE_URL` temporal que use `localhost:5432` (el mapeo de PostgreSQL está limitado al loopback del VPS). El siguiente comando carga las variables del `.env` en la sesión y cambia solo el host para esta ejecución:
@@ -57,8 +57,8 @@ DATABASE_URL="${DATABASE_URL/@postgres:5432/@localhost:5432}" corepack pnpm db:m
 Luego construye e inicia la aplicación y Caddy:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.production.yml up -d --build
-docker compose -f docker-compose.yml -f docker-compose.production.yml logs -f caddy
+docker compose --profile production up -d --build
+docker compose --profile production logs -f caddy
 ```
 
 Cuando DNS resuelva al VPS y 80/443 sean accesibles, Caddy solicitará y renovará automáticamente el certificado. Comprueba el sitio en `https://<APP_DOMAIN>` reemplazando `<APP_DOMAIN>` por el hostname real. Los certificados y los documentos subidos sobreviven a la recreación de sus contenedores mediante volúmenes Docker.
@@ -66,8 +66,8 @@ Cuando DNS resuelva al VPS y 80/443 sean accesibles, Caddy solicitará y renovar
 Tras modificar `Caddyfile`, valida y recarga la configuración:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.production.yml exec caddy caddy validate --config /etc/caddy/Caddyfile
-docker compose -f docker-compose.yml -f docker-compose.production.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
+docker compose --profile production exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker compose --profile production exec caddy caddy reload --config /etc/caddy/Caddyfile
 ```
 
 Comprobaciones: `corepack pnpm test`, `corepack pnpm typecheck`, `corepack pnpm build` y `corepack pnpm lint`.
