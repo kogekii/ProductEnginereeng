@@ -42,4 +42,6 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-          tags: ${{ env.IMAGE }}:pr-${{ github.event.number }}-${{ github.event.pull_request.head.sha }}
+          tags: |
+            ${{ env.IMAGE }}:pr-${{ github.event.number }}-${{ github.event.pull_request.head.sha }}
+            ${{ env.IMAGE }}:latest
