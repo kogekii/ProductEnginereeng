@@ -648,7 +648,7 @@ La capa de seguridad **no se implementa en esta oportunidad**, pero queda docume
 - El calendario de retiros muestra fechas futuras y no permite bloqueo manual.
 - La ventana de fechas futuras es configurable; valor inicial propuesto: 60 días.
 - El proveedor definitivo de WhatsApp se decide antes del piloto.
-- Durante el desarrollo y las demostraciones se puede habilitar un modo demo con acceso simulado por teléfono o correo y documento de identidad simulado. El modo demo se deshabilita en producción; el OTP y la captura real siguen siendo el comportamiento objetivo.
+- Durante el desarrollo y las demostraciones se puede habilitar un modo demo con acceso simulado por teléfono o correo y documento de identidad simulado. Para probar un despliegue productivo se puede configurar `DEMO_MODE=true` junto con `NODE_ENV=production`; el modo demo no habilita la carga del seed en producción; el OTP y la captura real siguen siendo el comportamiento objetivo.
 - Los textos legales requieren revisión antes de producción.
 
 ---

@@ -15,8 +15,10 @@ class FakeAuthRepository implements AuthRepository {
 }
 
 describe('configuración del servidor', () => {
-  it('rechaza el modo demo en producción', () => {
-    expect(() => loadConfig({ NODE_ENV: 'production', DEMO_MODE: 'true' })).toThrow('no se puede activar en producción');
+  it('permite el modo demo en producción sin cambiar el entorno', () => {
+    const config = loadConfig({ NODE_ENV: 'production', DEMO_MODE: 'true' });
+    expect(config.NODE_ENV).toBe('production');
+    expect(config.DEMO_MODE).toBe(true);
   });
 
   it('falla con configuración inválida', () => {
