@@ -2,12 +2,14 @@
 
 ## Why
 
-La imagen de producción no incluye el ejecutable de Prisma porque `pnpm prune --prod` elimina Prisma CLI, actualmente declarada como dependencia de desarrollo. Esto impide ejecutar `prisma migrate deploy` desde el contenedor de aplicación al desplegar.
+La etiqueta de despliegue `:latest` aún puede apuntar a una imagen anterior que no incluya Prisma CLI, y el workflow actual solo publica imágenes en eventos `pull_request`. Además, aunque el Dockerfile copia `prisma/seed.ts`, `pnpm prune --prod` elimina `tsx`, el ejecutor requerido por el comando de seed.
 
 ## What Changes
 
-- Mover `prisma` desde `devDependencies` a `dependencies`, conservando la versión y el lockfile sincronizado.
-- Verificar que la instalación de producción conserve el ejecutable `prisma` para ejecutar migraciones desde el contenedor.
+- Mantener `prisma` en `dependencies` y mover `tsx` a dependencias de producción, conservando sus versiones y sincronizando el lockfile.
+- Verificar en la imagen final que estén disponibles los ejecutables de Prisma y `tsx`, además de `prisma/seed.ts` y sus migraciones.
+- Publicar `:latest` también cuando se actualice la rama principal; mantener las etiquetas identificables de Pull Request.
+- Validar `db:migrate` y `db:seed` desde la imagen contra una base temporal usando `NODE_ENV=development` y `DEMO_MODE=true` para el seed.
 
 ## Capabilities
 
@@ -21,6 +23,7 @@ Ninguna. Es un cambio de empaquetado y dependencias; no modifica comportamiento 
 
 ## Impact
 
-- `package.json` y `pnpm-lock.yaml`.
-- La imagen Docker de producción tendrá Prisma CLI entre sus dependencias de runtime y podrá ejecutar `pnpm db:migrate`.
+- `package.json`, `pnpm-lock.yaml`, `Dockerfile` y `.github/workflows/docker-pr.yml`.
+- La imagen de despliegue tendrá Prisma CLI, `tsx`, seed y migraciones disponibles tras podar dependencias de desarrollo.
+- El workflow actualizará `:latest` en publicación desde la rama principal y conservará las etiquetas por PR.
 - No cambia el schema, las migraciones, APIs ni reglas de negocio.

@@ -18,6 +18,9 @@ describe('almacenamiento privado de documentos', () => {
     expect(result.sizeBytes).toBe(png.byteLength);
     expect(result.sha256).toHaveLength(64);
     expect(await storage.read(result.privatePath)).toEqual(png);
+    expect(await storage.exists(result.privatePath)).toBe(true);
+    await storage.delete(result.privatePath);
+    expect(await storage.exists(result.privatePath)).toBe(false);
   });
 
   it('rechaza MIME no permitido y archivos mayores de 10 MB', async () => {

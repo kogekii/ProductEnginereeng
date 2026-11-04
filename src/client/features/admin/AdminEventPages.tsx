@@ -27,7 +27,7 @@ export function AdminEventsPage() {
     queryFn: () => getJson<EventRow[]>(`/api/admin/events${query.size ? `?${query.toString()}` : ''}`),
   });
   return <main className="page">
-    <header className="header"><Link to="/">Volver al inicio</Link><span className="wordmark">Colegio</span><LogoutButton /></header>
+    <header className="header"><nav className="admin-nav" aria-label="Secciones de administración"><Link to="/admin/eventos">Eventos</Link><Link to="/admin/retiros">Retiros</Link></nav><span className="wordmark">Colegio</span><LogoutButton /></header>
     <section className="welcome"><p className="eyebrow">Panel de administración</p><h1>Eventos</h1><p>Seguimiento de autorizaciones pendientes.</p></section>
     <section className="filter-panel" aria-label="Filtrar por curso"><h2>Filtrar por curso</h2>
       {courses.isPending && <p role="status">Cargando cursos…</p>}
@@ -52,7 +52,7 @@ export function AdminEventPendingPage() {
   const { id } = useParams();
   const data = useQuery({ queryKey: ['admin-pending', id], queryFn: () => getJson<PendingData>(`/api/admin/events/${id}/pending`), enabled: Boolean(id) });
   return <main className="page">
-    <header className="header"><Link to="/admin/eventos">Volver a Eventos</Link><span className="wordmark">Colegio</span><LogoutButton /></header>
+    <header className="header"><nav className="admin-nav" aria-label="Secciones de administración"><Link to="/admin/eventos">Eventos</Link><Link to="/admin/retiros">Retiros</Link></nav><span className="wordmark">Colegio</span><LogoutButton /></header>
     {data.isPending && <p role="status">Cargando estudiantes pendientes…</p>}
     {data.isError && <p role="alert" className="error-message">{data.error.message}</p>}
     {data.data && <>

@@ -18,10 +18,14 @@ import { AuthorizationSubmissionService } from './modules/authorizations/authori
 import { PrismaAuthorizationSubmissionRepository } from './modules/authorizations/prisma-submission-repository.js';
 import { registerAuthorizationSubmissionRoutes } from './modules/authorizations/submission-routes.js';
 import { DocumentService } from './modules/documents/document-service.js';
+import { PrismaDocumentRepository } from './modules/documents/document-repository.js';
 import { registerDocumentRoutes } from './modules/documents/document-routes.js';
 import { AdminTrackingService } from './modules/admin/admin-tracking-service.js';
 import { PrismaAdminTrackingRepository } from './modules/admin/prisma-admin-tracking-repository.js';
 import { registerAdminTrackingRoutes } from './modules/admin/admin-tracking-routes.js';
+import { PickupService } from './modules/pickups/pickup-service.js';
+import { PrismaPickupRepository } from './modules/pickups/prisma-pickup-repository.js';
+import { registerPickupRoutes } from './modules/pickups/pickup-routes.js';
 
 export function buildApp(
   config: AppConfig = loadConfig(),
@@ -41,8 +45,9 @@ export function buildApp(
   registerGuardianEventRoutes(app, new GuardianEventService(new PrismaGuardianEventsRepository(prisma)));
   const storage = new LocalDocumentStorage(config.UPLOAD_DIR);
   const documentProvider = new SimulatedDocumentProvider(prisma, storage, config.RETENTION_DAYS);
-  registerDocumentRoutes(app, new DocumentService(prisma, storage, config.RETENTION_DAYS));
+  registerDocumentRoutes(app, new DocumentService(new PrismaDocumentRepository(prisma), storage, config.RETENTION_DAYS));
   registerAdminTrackingRoutes(app, new AdminTrackingService(new PrismaAdminTrackingRepository(prisma)));
+  registerPickupRoutes(app, new PickupService(new PrismaPickupRepository(prisma, storage)));
   registerAuthorizationSubmissionRoutes(app, new AuthorizationSubmissionService(
     new PrismaAuthorizationSubmissionRepository(prisma), (submissionId) => documentProvider.createForSubmission(submissionId),
   ));

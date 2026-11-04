@@ -3,9 +3,22 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { DocumentService } from './document-service.js';
 
+const uploadQuerySchema = z.object({
+  type: z.enum(['GUARDIAN_IDENTITY', 'EXTERNAL_IDENTITY']).default('GUARDIAN_IDENTITY'),
+  guardianDocumentId: z.uuid().optional(),
+});
+
 export function registerDocumentRoutes(app: FastifyInstance, service: DocumentService) {
   app.register(multipart, { limits: { files: 1, fileSize: 10 * 1024 * 1024 } });
   app.post('/api/documents', { preHandler: app.requireGuardian }, async (request, reply) => {
+    const query = uploadQuerySchema.safeParse(request.query);
+    if (!query.success) return reply.status(400).send({ code: 'INVALID_DOCUMENT', message: 'Los datos para subir el documento no son válidos.' });
+    if (query.data.type === 'EXTERNAL_IDENTITY' && !query.data.guardianDocumentId) {
+      return reply.status(400).send({ code: 'GUARDIAN_DOCUMENT_REQUIRED', message: 'Sube primero el documento del apoderado.' });
+    }
+    if (query.data.type === 'GUARDIAN_IDENTITY' && query.data.guardianDocumentId) {
+      return reply.status(400).send({ code: 'INVALID_DOCUMENT', message: 'El documento del apoderado no requiere otro documento previo.' });
+    }
     let part;
     try { part = await request.file({ limits: { files: 1, fileSize: 10 * 1024 * 1024 } }); }
     catch (error) {
@@ -22,11 +35,12 @@ export function registerDocumentRoutes(app: FastifyInstance, service: DocumentSe
       throw error;
     }
     try {
-      const document = await service.upload(request.authUser!.id, buffer, mime.data);
+      const document = await service.upload(request.authUser!.id, buffer, mime.data, query.data.type, query.data.guardianDocumentId);
       app.log.info({ documentId: document.id }, 'Documento de identidad recibido');
       return reply.status(201).send({ documentId: document.id });
     } catch (error) {
       if (error instanceof Error && error.message.includes('no coincide')) return reply.status(400).send({ code: 'INVALID_DOCUMENT_CONTENT', message: 'El contenido del archivo no corresponde a un documento válido.' });
+      if (error instanceof Error && error.message.includes('documento')) return reply.status(400).send({ code: 'INVALID_DOCUMENT', message: error.message });
       throw error;
     }
   });
