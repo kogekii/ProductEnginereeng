@@ -72,4 +72,4 @@ docker compose --profile production exec caddy caddy reload --config /etc/caddy/
 
 Comprobaciones: `corepack pnpm test`, `corepack pnpm typecheck`, `corepack pnpm build` y `corepack pnpm lint`.
 
-El modo demostración está destinado solo al entorno local. La aplicación rechaza iniciar con `DEMO_MODE=true` en producción.
+Para probar un despliegue productivo con acceso de demostración, configura `NODE_ENV=production` y `DEMO_MODE=true`. El modo demo no habilita la carga del seed de demostración en producción.

@@ -15,9 +15,6 @@ const envSchema = z.object({
 export function loadConfig(source: NodeJS.ProcessEnv = process.env) {
   const result = envSchema.safeParse(source);
   if (!result.success) throw new Error(`Configuración inválida: ${z.prettifyError(result.error)}`);
-  if (result.data.DEMO_MODE && result.data.NODE_ENV === 'production') {
-    throw new Error('El modo demostración no se puede activar en producción.');
-  }
   return result.data;
 }
 

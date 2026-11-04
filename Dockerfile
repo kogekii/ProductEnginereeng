@@ -37,6 +37,11 @@ COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 
+RUN test -x /app/node_modules/.bin/prisma \
+    && test -x /app/node_modules/.bin/tsx \
+    && test -f /app/prisma/seed.ts \
+    && test -n "$(find /app/prisma/migrations -mindepth 1 -maxdepth 1 -type d -print -quit)"
+
 RUN mkdir -p /app/data/uploads && chown -R node:node /app/data
 
 USER node
