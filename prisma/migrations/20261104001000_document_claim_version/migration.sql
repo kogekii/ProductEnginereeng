@@ -1,0 +1,1 @@
+ALTER TABLE "document" ADD COLUMN "claim_version" INTEGER NOT NULL DEFAULT 0;

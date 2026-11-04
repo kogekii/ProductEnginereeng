@@ -6,7 +6,7 @@ Documento de producto y contexto funcional para el desarrollo de la plataforma.
 |---|---|
 | Versión | 1.0 |
 | Estado | Contexto inicial para desarrollo |
-| Última actualización | 2026-11-01 |
+| Última actualización | 2026-11-03 |
 | Fuente de verdad | Este documento |
 | Alcance | Un colegio de educación básica en Chile |
 | Volumen estimado | ~300 estudiantes |
@@ -78,8 +78,8 @@ Puede:
 - Ver los eventos próximos que aplican a sus estudiantes.
 - Firmar autorizaciones para uno, varios o todos sus estudiantes aplicables.
 - Solicitar retiros externos para uno o varios días.
-- Registrar distintos externos para distintos días.
-- Subir su documento de identidad y el documento de identidad de cada externo.
+- Registrar una persona externa por solicitud; para otro externo, crear otra solicitud.
+- Subir su documento de identidad y luego el documento de identidad del externo, una vez por solicitud.
 - Ver el estado de sus solicitudes.
 
 No puede ver información de estudiantes que no le pertenecen.
@@ -157,25 +157,22 @@ Si un estudiante ya tiene una autorización vigente para ese evento, el sistema 
 ### 6.4 Retiro externo
 
 1. El apoderado entra a **Retiro Externo**.
-2. Se muestra un calendario con fechas futuras habilitadas.
-3. El apoderado puede seleccionar uno o varios días.
-4. Para cada día seleccionado:
-   - Selecciona uno o más estudiantes.
-   - Registra al externo que retirará a esos estudiantes: nombres, apellidos, RUT o pasaporte, parentesco y fotografía del documento de identidad.
-   - Puede usar el botón **Todos los estudiantes que apliquen** para seleccionar a todos sus estudiantes para ese día.
-5. Si distintos días tienen distintos externos, se registran por separado.
-6. El apoderado sube una sola vez su propio documento de identidad para validar la solicitud completa.
+2. Se muestra un mes a la vez: el actual o el siguiente, con navegación en la parte superior. Las selecciones se conservan al cambiar entre ambos.
+3. Puede seleccionar uno o varios días desde mañana hasta el último día del mes siguiente, según `America/Santiago`. Hoy, las fechas pasadas y los sábados y domingos están inhabilitados. Los feriados de lunes a viernes siguen habilitados, sin identificación ni advertencia especial.
+4. Cada día nuevo incluye por defecto a todos los estudiantes activos vinculados al apoderado. Se muestran sus nombres y se permite ajustar una selección común para los días no personalizados; la opción secundaria **Cambiar estudiantes por día** permite incluir o quitar estudiantes solo en una fecha. Ningún día puede quedar sin estudiantes al continuar.
+5. Registra una única persona externa para todos los estudiantes y días de la solicitud: nombres, apellidos, RUT o pasaporte y parentesco o vínculo. Para otro externo debe crear otra solicitud; no se admiten dos solicitudes activas para un mismo estudiante y fecha.
+6. Adjunta primero su propio documento de identidad y luego el del externo, una vez cada uno por solicitud. Puede tomar una fotografía o seleccionar un archivo compatible. Puede volver a los pasos anteriores sin perder lo ingresado durante la navegación del trámite.
 7. Antes de enviar, el sistema muestra obligatoriamente un resumen de:
    - Días seleccionados.
    - Estudiantes por día.
-   - Externo asignado a cada día.
-   - Propósito del retiro.
+   - Persona externa que realizará todos los retiros del lote.
+   - Propósito: autorizar a esa persona para retirar a los estudiantes indicados en las fechas seleccionadas; no se exige un motivo libre adicional.
 8. Al confirmar, la solicitud queda en estado **Pendiente de revisión**.
-9. Un administrador revisa el documento del apoderado y los documentos de los externos.
-10. El administrador aprueba o rechaza la solicitud con un motivo.
+9. La confirmación indica que el colegio recibió la solicitud y que todavía no autoriza el retiro. El apoderado puede consultar sus solicitudes y sus estados.
+10. Un administrador consulta solicitudes por fecha y estado, revisa ambos documentos y aprueba el lote completo o lo rechaza con un motivo obligatorio. Solo resuelve solicitudes pendientes. La aprobación no exige un motivo, pero requiere ambos documentos disponibles y que ninguna fecha haya pasado; puede aprobar el mismo día del retiro. Si alguna fecha ya pasó, puede rechazar el lote para que el apoderado solicite nuevamente los días futuros.
 11. La solicitud solo es válida para la fecha indicada si está aprobada.
 
-El calendario **no permite bloquear fechas manualmente**. Solo se inhabilitan las fechas pasadas. La ventana de fechas futuras es configurable; el valor inicial propuesto es de 60 días.
+El calendario **no permite bloquear fechas manualmente** ni consulta feriados. La ventana es de meses calendario, no de 60 días corridos. Un lote se registra completo o no se registra: si algún par estudiante–fecha tiene un conflicto o dejó de ser válido, se informa y se permite corregir antes de reenviar. Se revalidan fechas, vínculos y conflictos en el servidor al enviar; un reintento del mismo envío no duplica la solicitud.
 
 ### 6.5 Dashboard del administrador
 
@@ -266,13 +263,14 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[Inicio apoderado] --> B[Retiro Externo]
-    B --> C[Calendario de fechas futuras]
+    B --> C[Mes actual y siguiente: días futuros de lunes a viernes]
     C --> D[Seleccionar uno o más días]
-    D --> E[Seleccionar estudiantes por día]
-    E --> F[Registrar externo por día]
+    D --> E[Todos sus estudiantes por defecto y ajuste opcional por día]
+    E --> F[Registrar un externo para todo el lote]
     F --> G[Subir documento del apoderado]
-    G --> H[Resumen obligatorio]
-    H --> I[Enviar solicitud]
+    G --> H[Subir documento del externo]
+    H --> R[Resumen obligatorio]
+    R --> I[Enviar solicitud]
     I --> J[Pendiente de revisión]
     J --> K[Administrador revisa]
 ```
@@ -282,7 +280,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[Dashboard administrador] --> B[Retiros pendientes]
-    B --> C[Ver documento del apoderado y de los externos]
+    B --> C[Ver documento del apoderado y del externo]
     C --> D{¿Identidad válida?}
     D -- Sí --> E[Aprobar solicitud]
     D -- No --> F[Rechazar con motivo]
@@ -317,11 +315,11 @@ Estas reglas son obligatorias y deben estar cubiertas por tests cuando se implem
 
 ### Retiros externos
 
-14. El calendario solo permite fechas futuras; no existe bloqueo manual de fechas.
-15. Una solicitud puede incluir uno o más días, uno o más estudiantes y distintos externos por día.
-16. Cada día seleccionado debe tener al menos un estudiante y un externo con documento de identidad.
-17. La solicitud requiere el documento de identidad del apoderado una sola vez, aunque incluya varios días o externos.
-18. Antes de enviar, se muestra obligatoriamente el resumen de días, estudiantes y externos.
+14. El calendario solo permite fechas desde mañana hasta el último día del mes siguiente en `America/Santiago`, de lunes a viernes; muestra el mes actual o el siguiente con navegación superior. No existe bloqueo manual ni tratamiento especial de feriados.
+15. Una solicitud puede incluir uno o más días y estudiantes, pero exactamente un externo para todo el lote. Por defecto cada día nuevo incluye a todos los estudiantes activos vinculados al apoderado; se puede ajustar la selección común y personalizar estudiantes por día.
+16. Cada día seleccionado debe tener al menos un estudiante. El externo único debe contar con documento de identidad y se aplica a todos los pares estudiante–fecha del lote.
+17. La solicitud requiere el documento de identidad del apoderado primero y el del externo después, una vez cada uno, aunque incluya varios días o estudiantes.
+18. Antes de enviar, se muestra obligatoriamente el resumen de días, estudiantes por día y externo. El envío es atómico e idempotente: no crea solicitudes parciales ni duplicados por reintento.
 19. Una solicitud queda **Pendiente de revisión** hasta que un administrador la apruebe o rechace.
 20. Un retiro solo es válido para la fecha indicada si la solicitud está **Aprobada**.
 21. No puede existir más de una solicitud activa —pendiente o aprobada— para el mismo estudiante y fecha.
@@ -376,18 +374,20 @@ Estas reglas son obligatorias y deben estar cubiertas por tests cuando se implem
 #### Retiros externos
 
 - **PickupRequest**: solicitud de retiro.
-  - Campos principales: apoderado solicitante, estado, documento del apoderado, fecha de envío, revisor, fecha de revisión, motivo de rechazo.
+  - Campos principales: apoderado solicitante, estado, documento del apoderado, externo único, fecha de envío, revisor, fecha de revisión, motivo de rechazo, clave de idempotencia, hash del envío y snapshot del resumen.
 - **PickupItem**: detalle de un estudiante en un día.
-  - Campos principales: solicitud, estudiante, fecha de retiro, externo.
+  - Campos principales: solicitud, estudiante y fecha de retiro. El externo se obtiene de la solicitud.
   - Restricción: único por solicitud, estudiante y fecha.
+- **PickupActiveSlot**: reserva activa del par estudiante y fecha.
+  - Restricción: solo puede existir una reserva por estudiante y fecha; se libera al rechazar el lote y se conserva al aprobarlo.
 - **ExternalPerson**: persona externa que retira.
   - Campos principales: solicitud, tipo de documento, número de documento, nombres, apellidos, parentesco, documento de identidad.
-  - Restricción: único por solicitud y número de documento.
+  - Restricción: exactamente uno por solicitud; no se comparte como ficha reutilizable entre solicitudes.
 
 #### Soporte
 
 - **Document**: documento de identidad almacenado.
-  - Campos principales: tipo, ruta privada, MIME, tamaño, hash, cifrado, fecha de eliminación, fecha de borrado.
+  - Campos principales: tipo, ruta privada, MIME, tamaño, hash, cifrado, referencia al documento previo para controlar el orden, versión interna de reclamación, fecha de eliminación y fecha de borrado.
 - **AuditLog**: registro de acciones sensibles.
   - Campos principales: actor, acción, entidad, metadata, IP, user agent, fecha.
 - **ImportBatch**: carga CSV.
@@ -412,7 +412,7 @@ erDiagram
     USER ||--o{ PICKUP_REQUEST : solicita
     PICKUP_REQUEST ||--o{ PICKUP_ITEM : contiene
     STUDENT ||--o{ PICKUP_ITEM : retira
-    EXTERNAL_PERSON ||--o{ PICKUP_ITEM : ejecuta
+    PICKUP_REQUEST ||--|| EXTERNAL_PERSON : designa
     DOCUMENT ||--o{ PICKUP_REQUEST : valida
     DOCUMENT ||--o{ EXTERNAL_PERSON : identifica
     USER ||--o{ AUDIT_LOG : genera
@@ -646,9 +646,9 @@ La capa de seguridad **no se implementa en esta oportunidad**, pero queda docume
 - Los apoderados acceden principalmente desde teléfonos móviles.
 - Es probable que el enlace se abra desde WhatsApp, por lo que la aplicación debe funcionar en su navegador interno.
 - El calendario de retiros muestra fechas futuras y no permite bloqueo manual.
-- La ventana de fechas futuras es configurable; valor inicial propuesto: 60 días.
+- La ventana de retiros comprende el mes actual y el siguiente; solo se eligen fechas posteriores a hoy de lunes a viernes, sin tratamiento especial de feriados.
 - El proveedor definitivo de WhatsApp se decide antes del piloto.
-- Durante el desarrollo y las demostraciones se puede habilitar un modo demo con acceso simulado por teléfono o correo y documento de identidad simulado. Para probar un despliegue productivo se puede configurar `DEMO_MODE=true` junto con `NODE_ENV=production`; el modo demo no habilita la carga del seed en producción; el OTP y la captura real siguen siendo el comportamiento objetivo.
+- Durante el desarrollo y las demostraciones se puede habilitar un modo demo con acceso simulado por teléfono o correo y documento de identidad simulado para autorizaciones de eventos. El flujo de retiros conserva la carga de ambos documentos también en demo, utilizando archivos ficticios para pruebas. Para probar un despliegue productivo se puede configurar `DEMO_MODE=true` junto con `NODE_ENV=production`; el modo demo no habilita la carga del seed en producción. El OTP y la captura real siguen siendo el comportamiento objetivo.
 - Los textos legales requieren revisión antes de producción.
 
 ---
@@ -670,8 +670,8 @@ La capa de seguridad **no se implementa en esta oportunidad**, pero queda docume
 | Eventos | Cursos objetivo + excepciones individuales |
 | Apoderados | Varios por estudiante, uno principal |
 | Autorización | Una por estudiante/evento; válida al enviar |
-| Retiro | Multi-día, múltiples estudiantes, externos distintos por día; válido solo con aprobación del administrador |
-| Calendario | Fechas futuras, sin bloqueo manual |
+| Retiro | Multi-día y múltiples estudiantes, un externo por lote, todos sus estudiantes por defecto con ajuste por día; válido solo con aprobación del administrador |
+| Calendario | Mes actual y siguiente; desde mañana, lunes a viernes, sin bloqueo manual ni tratamiento de feriados |
 | Notificaciones | Solo OTP |
 | Retención de documentos | 12 meses |
 | Despliegue | VPS + Docker Compose + Caddy |
@@ -683,7 +683,7 @@ La capa de seguridad **no se implementa en esta oportunidad**, pero queda docume
 
 1. Proveedor definitivo de WhatsApp y aprobación de plantillas.
 2. Textos legales de autorización y política de privacidad.
-3. Confirmación de la ventana de 60 días para el calendario de retiros.
+3. Validación con apoderados de la selección predeterminada y el ajuste de estudiantes por día; la ventana de mes actual y siguiente ya está definida.
 4. Formato definitivo de las plantillas CSV.
 5. Si se marcará el retiro como realizado después de la fecha.
 6. Si el apoderado podrá cancelar una solicitud ya aprobada o solo el administrador.

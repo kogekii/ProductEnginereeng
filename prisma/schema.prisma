@@ -30,6 +30,18 @@ enum AuthorizationStatus {
   ANNULLED
 }
 
+enum PickupRequestStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ExternalIdentityType {
+  RUT
+  PASSPORT
+}
+
 model User {
   id String @id @default(uuid()) @db.Uuid
   email String? @unique
@@ -47,6 +59,8 @@ model User {
   annulledAuthorizations Authorization[] @relation("AuthorizationAnnulment")
   auditLogs AuditLog[]
   documents Document[]
+  pickupRequests PickupRequest[] @relation("PickupGuardian")
+  reviewedPickupRequests PickupRequest[] @relation("PickupReviewer")
   @@map("user")
 }
 
@@ -61,6 +75,7 @@ model Session {
   user User @relation(fields: [userId], references: [id])
   submissions AuthorizationSubmission[]
   authorizations Authorization[]
+  pickupRequests PickupRequest[]
   @@index([userId, expiresAt])
   @@map("session")
 }
@@ -90,6 +105,8 @@ model Student {
   guardianStudents GuardianStudent[]
   exceptions EventStudentException[]
   authorizations Authorization[]
+  pickupItems PickupItem[]
+  pickupActiveSlots PickupActiveSlot[]
   @@index([courseId, isActive])
   @@map("student")
 }
@@ -160,12 +177,18 @@ model Document {
   sha256 String
   isEncrypted Boolean @default(false) @map("is_encrypted")
   isSimulated Boolean @default(false) @map("is_simulated")
+  claimVersion Int @default(0) @map("claim_version")
   deleteAfter DateTime @map("delete_after") @db.Timestamptz(6)
   deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+  predecessorDocumentId String? @unique @map("predecessor_document_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   owner User? @relation(fields: [ownerId], references: [id])
   submissions AuthorizationSubmission[]
   authorizations Authorization[]
+  pickupGuardianRequest PickupRequest? @relation("PickupGuardianDocument")
+  externalPerson ExternalPerson? @relation("ExternalIdentityDocument")
+  predecessorDocument Document? @relation("DocumentPredecessor", fields: [predecessorDocumentId], references: [id])
+  successorDocument Document? @relation("DocumentPredecessor")
   @@map("document")
 }
 
@@ -217,6 +240,78 @@ model Authorization {
   @@index([guardianId, status])
   @@index([eventId, status])
   @@map("authorization")
+}
+
+model PickupRequest {
+  id String @id @default(uuid()) @db.Uuid
+  guardianId String @map("guardian_id") @db.Uuid
+  guardianDocumentId String @unique @map("guardian_document_id") @db.Uuid
+  idempotencyKey String @map("idempotency_key") @db.Uuid
+  payloadHash String @map("payload_hash")
+  summarySnapshot Json @map("summary_snapshot")
+  sessionId String @map("session_id") @db.Uuid
+  ip String?
+  userAgent String? @map("user_agent")
+  submittedAt DateTime @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  status PickupRequestStatus @default(PENDING_REVIEW)
+  reviewedById String? @map("reviewed_by_id") @db.Uuid
+  reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+  rejectionReason String? @map("rejection_reason") @db.VarChar(1000)
+  guardian User @relation("PickupGuardian", fields: [guardianId], references: [id])
+  guardianDocument Document @relation("PickupGuardianDocument", fields: [guardianDocumentId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+  reviewedBy User? @relation("PickupReviewer", fields: [reviewedById], references: [id])
+  externalPerson ExternalPerson?
+  items PickupItem[]
+  activeSlots PickupActiveSlot[]
+  @@unique([guardianId, idempotencyKey])
+  @@index([guardianId, submittedAt, id])
+  @@index([status, submittedAt, id])
+  @@map("pickup_request")
+}
+
+model ExternalPerson {
+  id String @id @default(uuid()) @db.Uuid
+  requestId String @unique @map("request_id") @db.Uuid
+  firstName String @map("first_name") @db.VarChar(100)
+  lastName String @map("last_name") @db.VarChar(100)
+  documentType ExternalIdentityType @map("document_type")
+  documentNumber String @map("document_number") @db.VarChar(30)
+  relationship String @db.VarChar(80)
+  documentId String @unique @map("document_id") @db.Uuid
+  request PickupRequest @relation(fields: [requestId], references: [id])
+  document Document @relation("ExternalIdentityDocument", fields: [documentId], references: [id])
+  @@index([documentType, documentNumber])
+  @@map("external_person")
+}
+
+model PickupItem {
+  id String @id @default(uuid()) @db.Uuid
+  requestId String @map("request_id") @db.Uuid
+  studentId String @map("student_id") @db.Uuid
+  pickupDate DateTime @map("pickup_date") @db.Date
+  request PickupRequest @relation(fields: [requestId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+  activeSlot PickupActiveSlot?
+  @@unique([requestId, studentId, pickupDate])
+  @@unique([id, requestId, studentId, pickupDate])
+  @@index([pickupDate, requestId])
+  @@index([studentId, pickupDate])
+  @@map("pickup_item")
+}
+
+model PickupActiveSlot {
+  studentId String @map("student_id") @db.Uuid
+  pickupDate DateTime @map("pickup_date") @db.Date
+  itemId String @unique @map("item_id") @db.Uuid
+  requestId String @map("request_id") @db.Uuid
+  student Student @relation(fields: [studentId], references: [id])
+  item PickupItem @relation(fields: [itemId, requestId, studentId, pickupDate], references: [id, requestId, studentId, pickupDate])
+  request PickupRequest @relation(fields: [requestId], references: [id])
+  @@id([studentId, pickupDate])
+  @@unique([itemId, requestId, studentId, pickupDate])
+  @@index([requestId])
+  @@map("pickup_active_slot")
 }
 
 model AuditLog {

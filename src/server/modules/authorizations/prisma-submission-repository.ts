@@ -24,15 +24,43 @@ export class PrismaAuthorizationSubmissionRepository implements AuthorizationSub
   }
 
   async attachDocument(submissionId: string, guardianId: string, documentId: string) {
-    const owned = await this.database.document.findFirst({ where: { id: documentId, ownerId: guardianId, deletedAt: null }, select: { id: true } });
-    if (!owned) return false;
-    try {
-      const result = await this.database.authorizationSubmission.updateMany({ where: { id: submissionId, guardianId, documentId: null }, data: { documentId } });
-      return result.count === 1;
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return false;
-      throw error;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await this.database.$transaction(async (transaction) => {
+          const claimed = await transaction.$executeRaw`UPDATE document SET claim_version = claim_version + 1 WHERE id = ${documentId}::uuid`;
+          if (claimed !== 1) return false;
+          const owned = await transaction.document.findFirst({
+            where: {
+              id: documentId,
+              ownerId: guardianId,
+              type: 'GUARDIAN_IDENTITY',
+              deletedAt: null,
+              deleteAfter: { gt: new Date() },
+              predecessorDocumentId: null,
+              submissions: { none: {} },
+              pickupGuardianRequest: null,
+              externalPerson: null,
+            },
+            select: { id: true },
+          });
+          if (!owned) return false;
+          try {
+            const result = await transaction.authorizationSubmission.updateMany({ where: { id: submissionId, guardianId, documentId: null }, data: { documentId } });
+            return result.count === 1;
+          } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return false;
+            throw error;
+          }
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+      } catch (error) {
+        const serializationFailure = error instanceof Prisma.PrismaClientKnownRequestError
+          && (error.code === 'P2034' || (error.code === 'P2010' && error.meta?.code === '40001'));
+        if (serializationFailure && attempt < 2) continue;
+        if (serializationFailure) return false;
+        throw error;
+      }
     }
+    return false;
   }
 
   async getPairContext(guardianId: string, eventId: string, studentId: string) {

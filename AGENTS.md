@@ -20,9 +20,9 @@ Plataforma web para un colegio de educación básica en Chile. Permite que los a
 
 ## 2. Estado actual del repositorio
 
-El repositorio está en etapa de contexto y planificación. **Todavía no existe código de aplicación ni scaffold.**
+El repositorio cuenta con un monolito Fastify + React, Prisma, tests, autorizaciones con acceso de demostración y el flujo de retiro externo definido por `docs/00-producto.md`. Revisa el estado del change `external-pickup-requests` y sus tareas para distinguir código implementado de validaciones manuales pendientes.
 
-Los comandos, rutas y estructura de la sección 5 son objetivos y se habilitarán cuando se cree el scaffold en una spec posterior.
+La estructura de la sección 5 es objetivo; revisa los archivos existentes antes de planificar o implementar módulos nuevos.
 
 No inventes archivos de aplicación que no existan. Si una tarea requiere código, primero debe existir una spec de OpenSpec que lo autorice.
 
@@ -170,13 +170,13 @@ El listado completo está en `docs/00-producto.md`, sección 8. Estas son las qu
 8. La autorización requiere documento del apoderado y registra evidencia.
 9. La autorización queda válida al enviarse; el administrador puede anularla con motivo.
 10. El botón “todos los aplicables” nunca incluye estudiantes de otros apoderados.
-11. El calendario de retiros solo permite fechas futuras y no tiene bloqueo manual.
-12. Una solicitud de retiro puede incluir varios días, estudiantes y externos.
-13. Cada día debe tener al menos un estudiante y un externo con documento.
-14. El documento del apoderado se sube una sola vez por solicitud.
+11. El calendario muestra mes actual y siguiente; solo permite desde mañana de lunes a viernes en `America/Santiago`, sin bloqueo manual ni tratamiento de feriados.
+12. Una solicitud incluye varios días y estudiantes, pero un solo externo por lote; por defecto cada día nuevo incluye a todos sus estudiantes activos, con ajuste opcional por día.
+13. Cada día debe tener al menos un estudiante; el externo único debe tener documento.
+14. Se sube primero el documento del apoderado y luego el del externo, una vez cada uno por solicitud.
 15. Antes de enviar un retiro se muestra el resumen obligatorio.
 16. Un retiro solo es válido si está aprobado por el administrador.
-17. No puede haber dos solicitudes activas para el mismo estudiante y fecha.
+17. No puede haber dos solicitudes activas para el mismo estudiante y fecha; el envío es atómico e idempotente.
 18. Los documentos de identidad se eliminan a los 12 meses.
 19. Las autorizaciones y auditorías no se eliminan; se anulan con motivo.
 20. Las fechas se muestran en `America/Santiago`.
@@ -415,7 +415,6 @@ TZ=America/Santiago
 LOG_LEVEL=info
 RETENTION_DAYS=365
 OTP_TTL_MINUTES=10
-PICKUP_WINDOW_DAYS=60
 ```
 
 Nunca commitear valores reales de secretos.

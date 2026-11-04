@@ -5,12 +5,15 @@ import { AuthProvider, useAuth } from '../features/auth/AuthProvider.js';
 import { AuthorizationEventsPage, AuthorizationResultPage, AuthorizationSummaryPage } from '../features/authorizations/AuthorizationPages.js';
 import { AdminEventPendingPage, AdminEventsPage } from '../features/admin/AdminEventPages.js';
 import { LogoutButton } from '../components/LogoutButton.js';
+import { PickupSelectionProvider } from '../features/pickups/PickupSelectionProvider.js';
+import { GuardianPickupCalendarPage, GuardianPickupExternalPage, GuardianPickupRequestDetailPage, GuardianPickupRequestsPage, GuardianPickupSummaryPage } from '../features/pickups/GuardianPickupPages.js';
+import { AdminPickupDetailPage, AdminPickupsPage } from '../features/pickups/AdminPickupPages.js';
 
 function Home() {
   const { user } = useAuth();
   return <main className="page"><header className="header"><span className="wordmark">Colegio</span><LogoutButton /></header>
     <section className="welcome"><p className="eyebrow">Portal de familias</p><h1>Hola, {user?.firstName}</h1><p>Revisa las autorizaciones de tus estudiantes.</p></section>
-    <nav className="actions" aria-label="Acciones principales"><Link className="action primary" to="/autorizaciones"><strong>Firmar autorización</strong><span>Revisa los eventos que aplican a tus estudiantes</span></Link><div className="action secondary"><strong>Retiro externo</strong><span>Próximamente</span></div></nav>
+    <nav className="actions" aria-label="Acciones principales"><Link className="action primary" to="/autorizaciones"><strong>Firmar autorización</strong><span>Revisa los eventos que aplican a tus estudiantes</span></Link><Link className="action secondary" to="/retiros"><strong>Retiro externo</strong><span>Autoriza a una persona para retirar</span></Link></nav>
   </main>;
 }
 
@@ -33,7 +36,23 @@ function Login() {
 }
 
 export default function App() {
-  return <AuthProvider><AuthorizationSelectionProvider><Routes><Route path="/login" element={<Login />} /><Route path="/" element={<GuardianRoute><Home /></GuardianRoute>} /><Route path="/autorizaciones" element={<GuardianRoute><AuthorizationEventsPage /></GuardianRoute>} /><Route path="/autorizaciones/resumen" element={<GuardianRoute><AuthorizationSummaryPage /></GuardianRoute>} /><Route path="/autorizaciones/resultado" element={<GuardianRoute><AuthorizationResultPage /></GuardianRoute>} /><Route path="/admin/eventos" element={<AdminRoute><AdminEventsPage /></AdminRoute>} /><Route path="/admin/eventos/:id" element={<AdminRoute><AdminEventPendingPage /></AdminRoute>} /><Route path="*" element={<Navigate to="/" replace />} /></Routes></AuthorizationSelectionProvider></AuthProvider>;
+  return <AuthProvider><AuthorizationSelectionProvider><PickupSelectionProvider><Routes>
+    <Route path="/login" element={<Login />} />
+    <Route path="/" element={<GuardianRoute><Home /></GuardianRoute>} />
+    <Route path="/autorizaciones" element={<GuardianRoute><AuthorizationEventsPage /></GuardianRoute>} />
+    <Route path="/autorizaciones/resumen" element={<GuardianRoute><AuthorizationSummaryPage /></GuardianRoute>} />
+    <Route path="/autorizaciones/resultado" element={<GuardianRoute><AuthorizationResultPage /></GuardianRoute>} />
+    <Route path="/retiros" element={<GuardianRoute><GuardianPickupCalendarPage /></GuardianRoute>} />
+    <Route path="/retiros/externo" element={<GuardianRoute><GuardianPickupExternalPage /></GuardianRoute>} />
+    <Route path="/retiros/resumen" element={<GuardianRoute><GuardianPickupSummaryPage /></GuardianRoute>} />
+    <Route path="/retiros/solicitudes" element={<GuardianRoute><GuardianPickupRequestsPage /></GuardianRoute>} />
+    <Route path="/retiros/solicitudes/:id" element={<GuardianRoute><GuardianPickupRequestDetailPage /></GuardianRoute>} />
+    <Route path="/admin/eventos" element={<AdminRoute><AdminEventsPage /></AdminRoute>} />
+    <Route path="/admin/eventos/:id" element={<AdminRoute><AdminEventPendingPage /></AdminRoute>} />
+    <Route path="/admin/retiros" element={<AdminRoute><AdminPickupsPage /></AdminRoute>} />
+    <Route path="/admin/retiros/:id" element={<AdminRoute><AdminPickupDetailPage /></AdminRoute>} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes></PickupSelectionProvider></AuthorizationSelectionProvider></AuthProvider>;
 }
 
 function GuardianRoute({ children }: { children: React.ReactNode }) {

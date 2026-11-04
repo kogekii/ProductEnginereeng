@@ -1,18 +1,18 @@
-import { PrismaClient } from '@prisma/client';
 import type { DocumentStorage, StoredDocument } from './document-storage.js';
+import type { DocumentRepository } from './document-repository.js';
 
 export class DocumentService {
-  constructor(private readonly database: PrismaClient, private readonly storage: DocumentStorage, private readonly retentionDays: number) {}
+  constructor(private readonly repository: DocumentRepository, private readonly storage: DocumentStorage, private readonly retentionDays: number, private readonly clock: () => Date = () => new Date()) {}
 
-  async upload(ownerId: string, buffer: Buffer, mimeType: string): Promise<{ id: string }> {
+  async upload(ownerId: string, buffer: Buffer, mimeType: string, type: 'GUARDIAN_IDENTITY' | 'EXTERNAL_IDENTITY' = 'GUARDIAN_IDENTITY', predecessorDocumentId?: string): Promise<{ id: string }> {
     if (!this.matchesMime(buffer, mimeType)) throw new Error('El contenido del archivo no coincide con su tipo.');
     const stored: StoredDocument = await this.storage.store(buffer, mimeType);
     try {
-      const document = await this.database.document.create({ data: {
-        ownerId, type: 'GUARDIAN_IDENTITY', ...stored,
-        deleteAfter: new Date(Date.now() + this.retentionDays * 86_400_000),
-      }, select: { id: true } });
-      return document;
+      return await this.repository.create({
+        ownerId, type, ...stored,
+        deleteAfter: new Date(this.clock().getTime() + this.retentionDays * 86_400_000),
+        ...(predecessorDocumentId ? { predecessorDocumentId } : {}),
+      });
     } catch (error) {
       await this.storage.delete(stored.privatePath);
       throw error;
@@ -20,14 +20,7 @@ export class DocumentService {
   }
 
   async read(documentId: string, user: { id: string; isAdmin: boolean }) {
-    const document = await this.database.document.findFirst({
-      where: {
-        id: documentId,
-        deletedAt: null,
-        ...(user.isAdmin ? {} : { OR: [{ ownerId: user.id }, { submissions: { some: { guardianId: user.id } } }] }),
-      },
-      select: { privatePath: true, mimeType: true },
-    });
+    const document = await this.repository.read(documentId, user, this.clock());
     if (!document) return null;
     return { buffer: await this.storage.read(document.privatePath), mimeType: document.mimeType };
   }
